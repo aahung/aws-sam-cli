@@ -4,6 +4,8 @@ Entry point for the CLI
 
 import logging
 import json
+from typing import Callable
+
 import click
 
 from samcli import __version__
@@ -29,7 +31,7 @@ pass_context = click.make_pass_decorator(Context)
 global_cfg = GlobalConfig()
 
 
-def common_options(f):
+def common_options(f: Callable) -> Callable:
     """
     Common CLI options used by all commands. Ex: --debug
     :param f: Callback function passed by Click
@@ -39,7 +41,7 @@ def common_options(f):
     return f
 
 
-def aws_creds_options(f):
+def aws_creds_options(f: Callable) -> Callable:
     """
     Common CLI options necessary to interact with AWS services
     """
@@ -48,7 +50,7 @@ def aws_creds_options(f):
     return f
 
 
-def print_info(ctx, param, value):
+def print_info(ctx: click.Context, param: click.Parameter, value: bool) -> None:
     if not value or ctx.resilient_parsing:
         return
 
@@ -74,7 +76,7 @@ TELEMETRY_PROMPT = """
 @click.version_option(version=__version__, prog_name="SAM CLI")
 @click.option("--info", is_flag=True, is_eager=True, callback=print_info, expose_value=False)
 @pass_context
-def cli(ctx):
+def cli(ctx: click.Context) -> None:
     """
     AWS Serverless Application Model (SAM) CLI
 

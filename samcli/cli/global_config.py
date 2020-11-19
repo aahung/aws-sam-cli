@@ -7,6 +7,7 @@ import logging
 import uuid
 import os
 from pathlib import Path
+from typing import Optional, Any, TypeVar, Dict
 
 import click
 
@@ -27,7 +28,16 @@ class GlobalConfig:
     the base directory, depending on platform.
     """
 
-    def __init__(self, config_dir=None, installation_id=None, telemetry_enabled=None):
+    _condig_dif: Optional[Path]
+    _installation_id: Optional[str]
+    _telemetry_enabled: Optional[bool]
+
+    def __init__(
+        self,
+        config_dir: Optional[Path] = None,
+        installation_id: Optional[str] = None,
+        telemetry_enabled: Optional[bool] = None,
+    ) -> None:
         """
         Initializes the class, with options provided to assist with testing.
 
@@ -39,7 +49,7 @@ class GlobalConfig:
         self._telemetry_enabled = telemetry_enabled
 
     @property
-    def config_dir(self):
+    def config_dir(self) -> Path:
         if not self._config_dir:
             # Internal Environment variable to customize SAM CLI App Dir. Currently used only by integ tests.
             app_dir = os.getenv("__SAM_CLI_APP_DIR")
@@ -47,7 +57,7 @@ class GlobalConfig:
         return Path(self._config_dir)
 
     @property
-    def installation_id(self):
+    def installation_id(self) -> Optional[str]:
         """
         Returns the installation UUID for this AWS SAM CLI installation. If the
         installation id has not yet been set, it will be set before returning.
@@ -76,7 +86,7 @@ class GlobalConfig:
             return None
 
     @property
-    def telemetry_enabled(self):
+    def telemetry_enabled(self) -> Optional[bool]:
         """
         Check if telemetry is enabled for this installation. Default value of
         False. It first tries to get value from SAM_CLI_TELEMETRY environment variable. If its not set,
@@ -107,13 +117,15 @@ class GlobalConfig:
 
         try:
             self._telemetry_enabled = self._get_value(TELEMETRY_ENABLED_KEY)
-            return self._telemetry_enabled
+            if isinstance(self._telemetry_enabled, bool):
+                return self._telemetry_enabled
+            return None
         except (ValueError, IOError, OSError) as ex:
             LOG.debug("Error when retrieving telemetry_enabled flag", exc_info=ex)
             return False
 
     @telemetry_enabled.setter
-    def telemetry_enabled(self, value):
+    def telemetry_enabled(self, value: bool) -> None:
         """
         Sets the telemetry_enabled flag to the provided boolean value.
 
@@ -137,7 +149,7 @@ class GlobalConfig:
         self._set_value("telemetryEnabled", value)
         self._telemetry_enabled = value
 
-    def _get_value(self, key):
+    def _get_value(self, key: str) -> Optional[Any]:
         cfg_path = self._get_config_file_path(CONFIG_FILENAME)
         if not cfg_path.exists():
             return None
@@ -146,7 +158,9 @@ class GlobalConfig:
             json_body = json.loads(body)
             return json_body.get(key)
 
-    def _set_value(self, key, value):
+    T = TypeVar("T")
+
+    def _set_value(self, key: str, value: T) -> T:
         cfg_path = self._get_config_file_path(CONFIG_FILENAME)
         if not cfg_path.exists():
             return self._set_json_cfg(cfg_path, key, value)
@@ -159,19 +173,19 @@ class GlobalConfig:
                 raise ex
             return self._set_json_cfg(cfg_path, key, value, json_body)
 
-    def _create_dir(self):
+    def _create_dir(self) -> None:
         """
         Creates configuration directory if it does not already exist, otherwise does nothing.
         May raise an OSError if we do not have permissions to create the directory.
         """
         self.config_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
 
-    def _get_config_file_path(self, filename):
+    def _get_config_file_path(self, filename: str) -> Path:
         self._create_dir()
         filepath = self.config_dir.joinpath(filename)
         return filepath
 
-    def _get_or_set_uuid(self, key):
+    def _get_or_set_uuid(self, key: str) -> str:
         """
         Special logic method for when we want a UUID to always be present, this
         method behaves as a getter with side effects. Essentially, if the value
@@ -182,11 +196,11 @@ class GlobalConfig:
         parameter.
         """
         cfg_value = self._get_value(key)
-        if cfg_value is not None:
+        if cfg_value is not None and isinstance(cfg_value, str):
             return cfg_value
         return self._set_value(key, str(uuid.uuid4()))
 
-    def _set_json_cfg(self, filepath, key, value, json_body=None):
+    def _set_json_cfg(self, filepath: Path, key: str, value: T, json_body: Optional[Dict[str, Any]] = None) -> T:
         """
         Special logic method to add a value to a JSON configuration file. This
         method will write a new version of the file in question, so it will

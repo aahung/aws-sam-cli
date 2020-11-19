@@ -5,8 +5,10 @@ Base classes that implement the CLI framework
 import logging
 import importlib
 from collections import OrderedDict
+from typing import Iterable, List, Optional, Callable
 
 import click
+from click import Command
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +66,7 @@ class BaseCommand(click.MultiCommand):
         self._commands = BaseCommand._set_commands(cmd_packages)
 
     @staticmethod
-    def _set_commands(package_names):
+    def _set_commands(package_names: Iterable[str]) -> OrderedDict:
         """
         Extract the command name from package name. Last part of the module path is the command
         ie. if path is foo.bar.baz, then "baz" is the command name.
@@ -81,7 +83,7 @@ class BaseCommand(click.MultiCommand):
 
         return commands
 
-    def list_commands(self, ctx):
+    def list_commands(self, ctx: click.Context) -> List[str]:
         """
         Overrides a method from Click that returns a list of commands available in the CLI.
 
@@ -90,7 +92,7 @@ class BaseCommand(click.MultiCommand):
         """
         return list(self._commands.keys())
 
-    def get_command(self, ctx, cmd_name):
+    def get_command(self, ctx: click.Context, cmd_name: str) -> Optional[Command]:
         """
         Overrides method from ``click.MultiCommand`` that returns Click CLI object for given command name, if found.
 
@@ -114,4 +116,4 @@ class BaseCommand(click.MultiCommand):
             logger.error("Command %s is not configured correctly. It must expose an function called 'cli'", cmd_name)
             return None
 
-        return mod.cli
+        return mod.cli  # type: ignore

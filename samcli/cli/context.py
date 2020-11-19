@@ -4,6 +4,7 @@ Context information passed to each CLI command
 
 import logging
 import uuid
+from typing import Optional, List
 
 import boto3
 import botocore
@@ -33,17 +34,17 @@ class Context:
     properties used by every CLI command.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initialize the context with default values
         """
         self._debug = False
-        self._aws_region = None
+        self._aws_region: Optional[str] = None
         self._aws_profile = None
         self._session_id = str(uuid.uuid4())
 
     @property
-    def debug(self):
+    def debug(self) -> bool:
         return self._debug
 
     @debug.setter
@@ -63,11 +64,11 @@ class Context:
             SamCliLogger.configure_logger(lambda_builders_logger, SAM_CLI_FORMATTER_WITH_TIMESTAMP, logging.DEBUG)
 
     @property
-    def region(self):
+    def region(self) -> Optional[str]:
         return self._aws_region
 
     @region.setter
-    def region(self, value):
+    def region(self, value: Optional[str]) -> None:
         """
         Set AWS region
         """
@@ -75,11 +76,11 @@ class Context:
         self._refresh_session()
 
     @property
-    def profile(self):
+    def profile(self) -> Optional[str]:
         return self._aws_profile
 
     @profile.setter
-    def profile(self, value):
+    def profile(self, value: Optional[str]) -> None:
         """
         Set AWS profile for credential resolution
         """
@@ -87,7 +88,7 @@ class Context:
         self._refresh_session()
 
     @property
-    def session_id(self):
+    def session_id(self) -> str:
         """
         Returns the ID of this command session. This is a randomly generated UUIDv4 which will not change until the
         command terminates.
@@ -95,7 +96,7 @@ class Context:
         return self._session_id
 
     @property
-    def command_path(self):
+    def command_path(self) -> Optional[str]:
         """
         Returns the full path of the command as invoked ex: "sam local generate-event s3 put". Wrapper to
         https://click.palletsprojects.com/en/7.x/api/#click.Context.command_path
@@ -131,7 +132,7 @@ class Context:
         return None
 
     @staticmethod
-    def get_current_context():
+    def get_current_context() -> click.Context:
         """
         Get the current Context object from Click's context stacks. This method is safe to run within the
         actual command's handler that has a ``@pass_context`` annotation. Outside of the handler, you run
@@ -163,7 +164,7 @@ class Context:
 
         return None
 
-    def _refresh_session(self):
+    def _refresh_session(self) -> None:
         """
         Update boto3's default session by creating a new session based on values set in the context. Some properties of
         the Boto3's session object are read-only. Therefore when Click parses new AWS session related properties (like
@@ -183,7 +184,7 @@ class Context:
             raise CredentialsError(str(ex)) from ex
 
 
-def get_cmd_names(cmd_name, ctx):
+def get_cmd_names(cmd_name: str, ctx: click.Context) -> List[str]:
     """
     Given the click core context, return a list representing all the subcommands passed to the CLI
 

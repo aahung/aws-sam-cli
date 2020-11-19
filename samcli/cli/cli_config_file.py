@@ -11,6 +11,8 @@ import functools
 import logging
 
 from pathlib import Path
+from typing import Callable, Union, Dict, NamedTuple, Iterable
+
 import click
 
 from samcli.commands.exceptions import ConfigException
@@ -187,9 +189,9 @@ def configuration_option(*param_decls, **attrs):
         `provider(file_path, config_env, cmd_name)
     """
 
-    def decorator_configuration_setup(f):
+    def decorator_configuration_setup(f: Callable) -> Callable:
         configuration_setup_params = ()
-        configuration_setup_attrs = {}
+        configuration_setup_attrs: Dict[str, Union[str, bool, click.types.StringParamType, Callable]] = {}
         configuration_setup_attrs[
             "help"
         ] = "This is a hidden click option whose callback function loads configuration parameters."
@@ -201,10 +203,10 @@ def configuration_option(*param_decls, **attrs):
         saved_callback = attrs.pop("callback", None)
         partial_callback = functools.partial(configuration_callback, None, None, saved_callback, provider)
         configuration_setup_attrs["callback"] = partial_callback
-        return click.option(*configuration_setup_params, **configuration_setup_attrs)(f)
+        return click.option(*configuration_setup_params, **configuration_setup_attrs)(f)  # type: ignore
 
-    def composed_decorator(decorators):
-        def decorator(f):
+    def composed_decorator(decorators: Iterable[Callable]) -> Callable:
+        def decorator(f: Callable) -> Callable:
             for deco in decorators:
                 f = deco(f)
             return f
@@ -221,14 +223,22 @@ def configuration_option(*param_decls, **attrs):
     return composed_decorator(decorator_list)
 
 
-def decorator_customize_config_file(f):
+class ConfigAttrs(NamedTuple):
+    help: str
+    default: str
+    is_eager: bool
+    required: bool
+    type: click.types.StringParamType
+
+
+def decorator_customize_config_file(f: Callable) -> Callable:
     """
     CLI option to customize configuration file name. By default it is 'samconfig.toml' in project directory.
     Ex: --config-file samconfig.toml
     :param f: Callback function passed by Click
     :return: Callback function
     """
-    config_file_attrs = {}
+    config_file_attrs: Dict[str, Union[str, bool, click.types.StringParamType]] = {}
     config_file_param_decls = ("--config-file",)
     config_file_attrs["help"] = (
         "The path and file name of the configuration file containing default parameter values to use. "
@@ -240,17 +250,17 @@ def decorator_customize_config_file(f):
     config_file_attrs["is_eager"] = True
     config_file_attrs["required"] = False
     config_file_attrs["type"] = click.STRING
-    return click.option(*config_file_param_decls, **config_file_attrs)(f)
+    return click.option(*config_file_param_decls, **config_file_attrs)(f)  # type: ignore
 
 
-def decorator_customize_config_env(f):
+def decorator_customize_config_env(f: Callable) -> Callable:
     """
     CLI option to customize configuration environment name. By default it is 'default'.
     Ex: --config-env default
     :param f: Callback function passed by Click
     :return: Callback function
     """
-    config_env_attrs = {}
+    config_env_attrs: Dict[str, Union[str, bool, click.types.StringParamType]] = {}
     config_env_param_decls = ("--config-env",)
     config_env_attrs["help"] = (
         "The environment name specifying the default parameter values in the configuration file to use. "
@@ -261,7 +271,7 @@ def decorator_customize_config_env(f):
     config_env_attrs["is_eager"] = True
     config_env_attrs["required"] = False
     config_env_attrs["type"] = click.STRING
-    return click.option(*config_env_param_decls, **config_env_attrs)(f)
+    return click.option(*config_env_param_decls, **config_env_attrs)(f)  # type: ignore
 
 
 # End section copied from [click_config_file][https://github.com/phha/click_config_file/blob/master/click_config_file.py

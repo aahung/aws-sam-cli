@@ -5,13 +5,14 @@ Implementation of custom click parameter types
 import re
 import json
 from json import JSONDecodeError
+from typing import Union, Tuple, Dict, Optional
 
 import click
 
 PARAM_AND_METADATA_KEY_REGEX = """([A-Za-z0-9\\"\']+)"""
 
 
-def _generate_match_regex(match_pattern, delim):
+def _generate_match_regex(match_pattern: str, delim: str) -> str:
 
     """
     Creates a regex string based on a match pattern (also a regex) that is to be
@@ -36,7 +37,7 @@ def _generate_match_regex(match_pattern, delim):
     )
 
 
-def _unquote_wrapped_quotes(value):
+def _unquote_wrapped_quotes(value: str) -> str:
     r"""
     Removes wrapping double quotes and any '\ ' characters. They are usually added to preserve spaces when passing
     value thru shell.
@@ -96,8 +97,10 @@ class CfnParameterOverridesType(click.ParamType):
     # NOTE(TheSriram): name needs to be added to click.ParamType requires it.
     name = ""
 
-    def convert(self, value, param, ctx):
-        result = {}
+    def convert(
+        self, value: Union[str, Tuple[str]], param: Optional[click.Parameter], ctx: Optional[click.Context]
+    ) -> Dict[str, str]:
+        result: Dict[str, str] = {}
 
         # Empty tuple
         if value == ("",):
@@ -152,19 +155,20 @@ class CfnMetadataType(click.ParamType):
     # NOTE(TheSriram): name needs to be added to click.ParamType requires it.
     name = ""
 
-    def convert(self, value, param, ctx):
-        result = {}
+    def convert(self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]) -> Dict[str, str]:
+        result: Dict[str, str] = {}
         fail = False
         if not value:
             return result
         try:
             # Look to load the value into json if we can.
-            result = json.loads(value)
-            for val in result.values():
+            parse_result = json.loads(value)
+            for val in parse_result.values():
                 if isinstance(val, (dict, list)):
                     # Need a non nested dictionary or a dictionary with non list values,
                     # If either is found, fail the conversion.
                     fail = True
+            result = parse_result
         except JSONDecodeError:
             # if looking for a json format failed, look at if the specified value follows
             # KeyName1=string,KeyName2=string format
@@ -200,8 +204,10 @@ class CfnTags(click.ParamType):
     # NOTE(TheSriram): name needs to be added to click.ParamType requires it.
     name = ""
 
-    def convert(self, value, param, ctx):
-        result = {}
+    def convert(
+        self, value: Union[str, Tuple[str]], param: Optional[click.Parameter], ctx: Optional[click.Context]
+    ) -> Dict[str, str]:
+        result: Dict[str, str] = {}
         fail = False
         # Empty tuple
         if value == ("",):
@@ -213,10 +219,10 @@ class CfnTags(click.ParamType):
         for val in value:
             # Using standard parser first.
             # We should implement other type parser like JSON and Key=key,Value=val type format.
-            parsed, tags = self._standard_key_value_parser(val)
-            if not parsed:
-                parsed, tags = self._space_separated_key_value_parser(val)
-            if parsed:
+            tags = self._standard_key_value_parser(val)
+            if tags is None:
+                tags = self._space_separated_key_value_parser(val)
+            if tags is not None:
                 for k in tags:
                     result[_unquote_wrapped_quotes(k)] = _unquote_wrapped_quotes(tags[k])
             else:
@@ -239,7 +245,7 @@ class CfnTags(click.ParamType):
         return result
 
     @staticmethod
-    def _standard_key_value_parser(tag_value):
+    def _standard_key_value_parser(tag_value: str) -> Optional[Dict[str, str]]:
         """
         Method to parse simple `Key=Value` type tags without using regex. This is similar to how aws-cli does this.
         https://github.com/aws/aws-cli/blob/eff79a263347e8e83c8a2cc07265ab366315a992/awscli/customizations/cloudformation/deploy.py#L361
@@ -253,23 +259,23 @@ class CfnTags(click.ParamType):
         """
         equals_count = tag_value.count("=")
         if equals_count != 1:
-            return False, None
+            return None
 
         splits = tag_value.split("=")
-        return True, {splits[0]: splits[1]}
+        return {splits[0]: splits[1]}
 
     @staticmethod
-    def _space_separated_key_value_parser(tag_value):
+    def _space_separated_key_value_parser(tag_value: str) -> Optional[Dict[str, str]]:
         """
         Method to parse space separated `Key1=Value1 Key2=Value2` type tags without using regex.
         Parameters
         ----------
         tag_value
         """
-        tags_dict = {}
+        tags_dict: Dict[str, str] = {}
         for value in tag_value.split(" "):
-            parsed, parsed_tag = CfnTags._standard_key_value_parser(value)
-            if not parsed:
-                return False, None
+            parsed_tag = CfnTags._standard_key_value_parser(value)
+            if parsed_tag is None:
+                return None
             tags_dict = {**tags_dict, **parsed_tag}
-        return True, tags_dict
+        return tags_dict

@@ -2,20 +2,21 @@
 This file contains common CLI options common to all commands. As we add more commands, this will
 become a repository of options that other commands could use when needed.
 """
+from collections import Callable
 
 import click
 
 from .context import Context
 
 
-def debug_option(f):
+def debug_option(f: Callable) -> Callable:
     """
     Configures --debug option for CLI
 
     :param f: Callback Function to be passed to Click
     """
 
-    def callback(ctx, param, value):
+    def callback(ctx: click.Context, param: click.Parameter, value: bool) -> bool:
         state = ctx.ensure_object(Context)
         state.debug = value
         return value
@@ -30,7 +31,7 @@ def debug_option(f):
     )(f)
 
 
-def region_option(f):
+def region_option(f: Callable) -> Callable:
     """
     Configures --region option for CLI
 
@@ -47,7 +48,7 @@ def region_option(f):
     )(f)
 
 
-def profile_option(f):
+def profile_option(f: Callable) -> Callable:
     """
     Configures --profile option for CLI
 
