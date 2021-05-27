@@ -26,7 +26,15 @@ class TestDoCli(TestCase):
     @patch("samcli.lib.build.app_builder.ApplicationBuilder")
     @patch("samcli.commands._utils.template.move_template")
     @patch("samcli.commands.build.command.os")
-    def test_must_succeed_build(self, os_mock, move_template_mock, ApplicationBuilderMock, BuildContextMock):
+    @patch("samcli.commands.build.command.SamApiProvider.check_implicit_api_resource_ids")
+    def test_must_succeed_build(
+        self,
+        check_implicit_api_resource_ids_mock,
+        os_mock,
+        move_template_mock,
+        ApplicationBuilderMock,
+        BuildContextMock,
+    ):
 
         ctx_mock = Mock()
 
@@ -131,7 +139,15 @@ class TestDoCli(TestCase):
     )
     @patch("samcli.commands.build.build_context.BuildContext")
     @patch("samcli.lib.build.app_builder.ApplicationBuilder")
-    def test_must_catch_known_exceptions(self, exception, wrapped_exception, ApplicationBuilderMock, BuildContextMock):
+    @patch("samcli.commands.build.command.SamApiProvider.check_implicit_api_resource_ids")
+    def test_must_catch_known_exceptions(
+        self,
+        exception,
+        wrapped_exception,
+        check_implicit_api_resource_ids_mock,
+        ApplicationBuilderMock,
+        BuildContextMock,
+    ):
 
         ctx_mock = Mock()
         BuildContextMock.return_value.__enter__ = Mock()
@@ -166,7 +182,10 @@ class TestDoCli(TestCase):
 
     @patch("samcli.commands.build.build_context.BuildContext")
     @patch("samcli.lib.build.app_builder.ApplicationBuilder")
-    def test_must_catch_function_not_found_exception(self, ApplicationBuilderMock, BuildContextMock):
+    @patch("samcli.commands.build.command.SamApiProvider.check_implicit_api_resource_ids")
+    def test_must_catch_function_not_found_exception(
+        self, check_implicit_api_resource_ids_mock, ApplicationBuilderMock, BuildContextMock
+    ):
         ctx_mock = Mock()
         BuildContextMock.return_value.__enter__ = Mock()
         BuildContextMock.return_value.__enter__.return_value = ctx_mock

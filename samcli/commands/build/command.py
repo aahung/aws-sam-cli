@@ -15,6 +15,7 @@ from samcli.commands._utils.options import (
 )
 from samcli.cli.main import pass_context, common_options as cli_framework_options, aws_creds_options, print_cmdline_args
 from samcli.lib.build.exceptions import BuildInsideContainerError
+from samcli.lib.providers.sam_api_provider import SamApiProvider
 from samcli.lib.providers.sam_stack_provider import SamLocalStackProvider
 from samcli.lib.telemetry.metric import track_command
 from samcli.cli.cli_config_file import configuration_option, TomlProvider
@@ -292,6 +293,8 @@ def do_cli(  # pylint: disable=too-many-locals, too-many-statements
         container_env_var_file=container_env_var_file,
         build_images=processed_build_images,
     ) as ctx:
+        SamApiProvider.check_implicit_api_resource_ids(ctx.stacks)
+
         try:
             builder = ApplicationBuilder(
                 ctx.resources_to_build,
