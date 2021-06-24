@@ -123,6 +123,18 @@ Resources:
                   aws:SourceIp:
                     - !Ref PipelineIpRange
             - !Ref AWS::NoValue
+          - Effect: Allow
+            Principal:
+              # Allow roles with path "/AWS-SAM-Pipeline/Assumer/" to assume this role
+              # if CodePipeline is the CI/CD system of choice.
+              AWS:
+                - !Join
+                  - ''
+                  - - "arn:aws:iam::"
+                    - !If [MissingPipelineUser, !Ref AWS::AccountId, !Select [4, !Split [':', !Ref PipelineUserArn]]]
+                    - ":role/AWS-SAM-Pipeline/Assumer/*"
+            Action:
+              - 'sts:AssumeRole'
 
   ArtifactsBucket:
     Type: AWS::S3::Bucket
