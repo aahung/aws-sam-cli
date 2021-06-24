@@ -128,6 +128,20 @@ Resources:
                   aws:SourceIp:
                     - !Ref PipelineIpRange
             - !Ref AWS::NoValue
+          - Effect: Allow
+            Principal:
+              # Allow roles with tag Role=aws-sam-pipeline-codebuild-service-role to assume this role
+              # if CodePipeline is the CI/CD system of choice.
+              AWS:
+                - !If
+                  - MissingPipelineUser
+                  - !Ref AWS::AccountId
+                  - !Select [4, !Split [':', !Ref PipelineUserArn]]
+            Action:
+              - 'sts:AssumeRole'
+            Condition:
+              StringEquals:
+                aws:PrincipalTag/Role: aws-sam-pipeline-codebuild-service-role
 
   ArtifactsBucket:
     Type: AWS::S3::Bucket
