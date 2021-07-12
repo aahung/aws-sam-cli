@@ -59,6 +59,7 @@ class TestDoCli(TestCase):
         builder_mock.update_template.side_effect = [modified_template_root, modified_template_child]
 
         do_cli(
+            ctx_mock,
             "function_identifier",
             "template",
             "base_dir",
@@ -158,6 +159,7 @@ class TestDoCli(TestCase):
 
         with self.assertRaises(UserException) as ctx:
             do_cli(
+                ctx_mock,
                 "function_identifier",
                 "template",
                 "base_dir",
@@ -193,6 +195,7 @@ class TestDoCli(TestCase):
 
         with self.assertRaises(UserException) as ctx:
             do_cli(
+                ctx_mock,
                 "function_identifier",
                 "template",
                 "base_dir",
